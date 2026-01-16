@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess</title>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="main-container">
+    <div id="myBoard"></div>
+
+    <div class="sidebar">
+        <div class="player-info">
+            <div><span class="player-avatar">👤</span> Player 2 (Black)</div>
+        </div>
+        
+        <div class="moves-container" id="pgn-display">
+            New Game.
+        </div>
+
+        <div class="player-info">
+            <div><span class="player-avatar">👤</span> Player 1 (White)</div>
+        </div>
+
+        <div class="status" id="status">White to move</div>
+
+        <div class="controls">
+            <button id="btnNewGame" class="primary">New Game</button>
+            <button id="btnFlip">Flip Board</button>
+        </div>
+    </div>
+</div>
+
+<div id="promotion-dialog" class="hidden">
+    <div class="promotion-content">
+        <h3>Choose Promotion:</h3>
+        <div class="promo-options">
+            <button onclick="choosePromotion('q')">♛ Queen</button>
+            <button onclick="choosePromotion('n')">♞ Knight</button>
+            <button onclick="choosePromotion('r')">♜ Rook</button>
+            <button onclick="choosePromotion('b')">♝ Bishop</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
