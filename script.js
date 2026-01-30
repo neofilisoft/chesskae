@@ -9,7 +9,7 @@ var destinationSquare = null;
 var gameMode = 'pvp'; // 'pvp' or 'pve'
 var playerColor = 'white'; // 'white' or 'black' (for PvE mode)
 var engineThinking = false;
-var aiDifficulty = 2; // Depth of minimax search (1-5)
+var aiDifficulty = 2; // Depth of minimax search (1-4) - Lower = Faster
 
 // === AI ENGINE FUNCTIONS ===
 
@@ -57,37 +57,26 @@ function getPositionBonus(pieceType, color, x, y) {
     
     var bonus = 0;
     
+    // Simplified bonuses for faster calculation
     // Pawns: encourage advancement
     if (pieceType === 'p') {
-        var pawnTable = [
-            0,  0,  0,  0,  0,  0,  0,  0,
-            50, 50, 50, 50, 50, 50, 50, 50,
-            10, 10, 20, 30, 30, 20, 10, 10,
-            5,  5, 10, 25, 25, 10,  5,  5,
-            0,  0,  0, 20, 20,  0,  0,  0,
-            5, -5,-10,  0,  0,-10, -5,  5,
-            5, 10, 10,-20,-20, 10, 10,  5,
-            0,  0,  0,  0,  0,  0,  0,  0
-        ];
-        bonus = pawnTable[x * 8 + y];
+        bonus = x * 10; // Simple advancement bonus
+        if (y >= 2 && y <= 5) bonus += 5; // Center files bonus
     }
     
     // Knights: prefer center
     if (pieceType === 'n') {
-        var knightTable = [
-            -50,-40,-30,-30,-30,-30,-40,-50,
-            -40,-20,  0,  0,  0,  0,-20,-40,
-            -30,  0, 10, 15, 15, 10,  0,-30,
-            -30,  5, 15, 20, 20, 15,  5,-30,
-            -30,  0, 15, 20, 20, 15,  0,-30,
-            -30,  5, 10, 15, 15, 10,  5,-30,
-            -40,-20,  0,  5,  5,  0,-20,-40,
-            -50,-40,-30,-30,-30,-30,-40,-50
-        ];
-        bonus = knightTable[x * 8 + y];
+        var distFromCenter = Math.abs(3.5 - x) + Math.abs(3.5 - y);
+        bonus = (7 - distFromCenter) * 5;
     }
     
-    return bonus / 10; // Scale down bonuses
+    // Bishops: slight bonus for center
+    if (pieceType === 'b') {
+        var distFromCenter = Math.abs(3.5 - x) + Math.abs(3.5 - y);
+        bonus = (7 - distFromCenter) * 2;
+    }
+    
+    return bonus;
 }
 
 // Minimax algorithm with alpha-beta pruning
@@ -98,6 +87,11 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
     
     var moves = game.moves();
     
+    // Move ordering: prioritize captures and checks for better pruning
+    if (depth > 2) {
+        moves = orderMoves(game, moves);
+    }
+    
     if (isMaximizingPlayer) {
         var maxEval = -Infinity;
         for (var i = 0; i < moves.length; i++) {
@@ -106,7 +100,7 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
             game.undo();
             maxEval = Math.max(maxEval, evaluation);
             alpha = Math.max(alpha, evaluation);
-            if (beta <= alpha) break;
+            if (beta <= alpha) break; // Beta cutoff
         }
         return maxEval;
     } else {
@@ -117,10 +111,38 @@ function minimax(game, depth, alpha, beta, isMaximizingPlayer) {
             game.undo();
             minEval = Math.min(minEval, evaluation);
             beta = Math.min(beta, evaluation);
-            if (beta <= alpha) break;
+            if (beta <= alpha) break; // Alpha cutoff
         }
         return minEval;
     }
+}
+
+// Order moves for better alpha-beta pruning
+function orderMoves(game, moves) {
+    var scoredMoves = [];
+    
+    for (var i = 0; i < moves.length; i++) {
+        var move = game.move(moves[i]);
+        var score = 0;
+        
+        // Prioritize captures
+        if (move.captured) {
+            score += pieceValues[move.captured] - pieceValues[move.piece] / 10;
+        }
+        
+        // Prioritize checks
+        if (game.in_check()) {
+            score += 50;
+        }
+        
+        game.undo();
+        scoredMoves.push({ move: moves[i], score: score });
+    }
+    
+    // Sort by score (highest first)
+    scoredMoves.sort(function(a, b) { return b.score - a.score; });
+    
+    return scoredMoves.map(function(sm) { return sm.move; });
 }
 
 // Find best move for AI
@@ -186,7 +208,7 @@ function getEngineMove() {
             if (move) {
                 setTimeout(function() {
                     makeEngineMove(move.from, move.to, move.promotion || 'q');
-                }, 500);
+                }, 200); // Reduced delay for faster response
             } else {
                 console.error('Invalid move generated');
                 engineThinking = false;
@@ -197,7 +219,7 @@ function getEngineMove() {
             engineThinking = false;
             hideThinking(game.turn());
         }
-    }, 100);
+    }, 50); // Reduced delay for faster start
 }
 
 // Execute engine move
@@ -306,7 +328,7 @@ function executeMove(source, target, promoPiece = 'q') {
     
     // Trigger engine move if needed
     if (shouldEngineMove()) {
-        setTimeout(getEngineMove, 300);
+        setTimeout(getEngineMove, 200); // Faster response after player move
     }
     
     return 'success';
@@ -462,7 +484,7 @@ function updatePlayerNames() {
         $('#game-mode-display').text('Mode: Player vs Player');
         $('#difficulty-display').text('');
     } else {
-        var difficultyText = ['Very Easy', 'Easy', 'Medium', 'Hard', 'Very Hard'];
+        var difficultyText = ['Easy', 'Medium', 'Hard', 'Expert'];
         if (playerColor === 'white') {
             $('#white-name').text('You (White)');
             $('#black-name').text('Computer (Black)');
@@ -492,7 +514,7 @@ function startNewGame() {
     
     // If engine plays white, make first move
     if (gameMode === 'pve' && playerColor === 'black' && !game.game_over()) {
-        setTimeout(getEngineMove, 800);
+        setTimeout(getEngineMove, 400); // Faster initial move
     }
 }
 
@@ -586,4 +608,3 @@ $('#btnBackToMenu').on('click', function() {
 $(document).ready(function() {
     updateStatus();
 });
-
