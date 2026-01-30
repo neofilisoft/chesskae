@@ -18,7 +18,9 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
+    padding: 0;
     user-select: none;
+    overflow-x: hidden;
 }
 
 .main-container {
@@ -29,10 +31,13 @@ body {
     border-radius: 5px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     position: relative;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 #myBoard {
     width: 500px;
+    flex-shrink: 0;
 }
 
 .sidebar {
@@ -70,9 +75,10 @@ body {
 
 .moves-container {
     flex-grow: 1;
-    background: #1f1b18;
+    background: #5a4232;
     overflow-y: auto;
     height: 350px;
+    max-height: 350px;
     border: 1px solid var(--board-border);
     margin: 10px 0;
     padding: 10px;
@@ -80,6 +86,7 @@ body {
     font-size: 14px;
     line-height: 1.5;
     color: #ccc;
+    box-sizing: border-box;
 }
 
 .moves-container::-webkit-scrollbar {
@@ -324,50 +331,246 @@ button.primary:hover {
 
 /* Responsive Design */
 @media (max-width: 900px) {
+    body {
+        align-items: flex-start;
+        padding: 10px 0;
+    }
+
     .main-container {
         flex-direction: column;
         align-items: center;
+        padding: 15px 10px;
+        gap: 15px;
+        margin: 0;
+        width: 100%;
+        min-height: 100vh;
+        border-radius: 0;
     }
 
     #myBoard {
-        width: 90vw;
-        max-width: 500px;
+        width: min(90vw, 400px);
+        max-width: 400px;
     }
 
     .sidebar {
-        width: 90vw;
-        max-width: 500px;
+        width: min(90vw, 400px);
+        max-width: 400px;
+    }
+
+    .moves-container {
+        height: 200px;
+        max-height: 200px;
+        font-size: 12px;
     }
 
     .modal-content {
         min-width: 300px;
         padding: 30px 20px;
+        max-width: 90vw;
     }
 
     .mode-buttons {
         flex-direction: column;
+        gap: 15px;
     }
 
-    .mode-btn, .color-btn {
+    .mode-btn {
         width: 100%;
+        min-width: auto;
+        padding: 25px 30px;
+    }
+
+    .mode-icon {
+        font-size: 40px;
+    }
+
+    .color-btn {
+        width: 100%;
+        min-width: auto;
+        padding: 20px 25px;
+    }
+
+    .piece-display {
+        font-size: 56px;
+    }
+
+    .player-info {
+        padding: 8px;
+        font-size: 14px;
+    }
+
+    .player-avatar {
+        font-size: 18px;
+    }
+
+    .status {
+        font-size: 14px;
+        padding: 6px;
+    }
+
+    .game-info {
+        font-size: 11px;
+        padding: 6px;
+    }
+
+    .controls {
+        gap: 8px;
+    }
+
+    button {
+        font-size: 13px;
+        padding: 10px 8px;
     }
 }
 
 @media (max-width: 480px) {
+    body {
+        padding: 5px 0;
+    }
+
+    .main-container {
+        padding: 10px 5px;
+        gap: 10px;
+    }
+
+    #myBoard {
+        width: min(95vw, 350px);
+        max-width: 350px;
+    }
+
+    .sidebar {
+        width: min(95vw, 350px);
+        max-width: 350px;
+    }
+
+    .moves-container {
+        height: 150px;
+        max-height: 150px;
+        font-size: 11px;
+        padding: 8px;
+    }
+
+    .modal-content {
+        min-width: 280px;
+        padding: 25px 15px;
+    }
+
     .modal-content h2 {
         font-size: 22px;
+        margin-bottom: 20px;
     }
 
     .mode-icon {
         font-size: 36px;
+        margin-bottom: 10px;
+    }
+
+    .mode-btn {
+        padding: 20px 25px;
+        font-size: 15px;
     }
 
     .piece-display {
         font-size: 48px;
+        margin-bottom: 8px;
+    }
+
+    .color-btn {
+        padding: 18px 20px;
+        font-size: 15px;
+    }
+
+    .player-info {
+        padding: 6px;
+        font-size: 13px;
+    }
+
+    .player-avatar {
+        font-size: 16px;
+        margin-right: 6px;
+    }
+
+    .thinking {
+        font-size: 11px;
+    }
+
+    .status {
+        font-size: 13px;
+        padding: 6px;
+        margin-top: 8px;
+    }
+
+    .game-info {
+        font-size: 10px;
+        padding: 5px;
+        margin-top: 4px;
+    }
+
+    .controls {
+        gap: 6px;
     }
 
     button {
         font-size: 12px;
-        padding: 8px;
+        padding: 8px 6px;
+    }
+
+    .promo-options button {
+        font-size: 16px;
+        width: 100px;
+        padding: 12px 8px;
+    }
+}
+
+/* Extra tall mobile screens (18:9, 19.5:9, 20:9) */
+@media (max-width: 480px) and (min-height: 700px) {
+    .main-container {
+        min-height: auto;
+        justify-content: center;
+    }
+
+    .moves-container {
+        height: 180px;
+        max-height: 180px;
+    }
+}
+
+/* Landscape mode for mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+    body {
+        align-items: center;
+        padding: 0;
+    }
+
+    .main-container {
+        flex-direction: row;
+        min-height: auto;
+        padding: 10px;
+        gap: 10px;
+    }
+
+    #myBoard {
+        width: min(50vw, 350px);
+        max-width: 350px;
+    }
+
+    .sidebar {
+        width: min(45vw, 300px);
+        max-width: 300px;
+    }
+
+    .moves-container {
+        height: 200px;
+        max-height: 200px;
+    }
+
+    .player-info {
+        padding: 5px;
+        font-size: 12px;
+    }
+
+    button {
+        padding: 6px 8px;
+        font-size: 11px;
     }
 }
