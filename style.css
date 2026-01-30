@@ -75,7 +75,7 @@ body {
 
 .moves-container {
     flex-grow: 1;
-    background: #5a4232;
+    background: #1f1b18;
     overflow-y: auto;
     height: 350px;
     max-height: 350px;
@@ -574,3 +574,4 @@ button.primary:hover {
         font-size: 11px;
     }
 }
+
