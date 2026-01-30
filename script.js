@@ -9,7 +9,7 @@ var destinationSquare = null;
 var gameMode = 'pvp'; // 'pvp' or 'pve'
 var playerColor = 'white'; // 'white' or 'black' (for PvE mode)
 var engineThinking = false;
-var aiDifficulty = 3; // Depth of minimax search (1-5)
+var aiDifficulty = 2; // Depth of minimax search (1-5)
 
 // === AI ENGINE FUNCTIONS ===
 
@@ -586,3 +586,4 @@ $('#btnBackToMenu').on('click', function() {
 $(document).ready(function() {
     updateStatus();
 });
+
