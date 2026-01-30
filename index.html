@@ -3,37 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess</title>
+    <title>Chess - PvP & PvE</title>
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="main-container">
+<!-- Game Mode Selection Screen -->
+<div id="mode-selection" class="modal-overlay">
+    <div class="modal-content">
+        <h2>เลือกโหมดเกม</h2>
+        <div class="mode-buttons">
+            <button id="btnPvP" class="mode-btn">
+                <span class="mode-icon">👥</span>
+                <div>Player vs Player</div>
+            </button>
+            <button id="btnPvE" class="mode-btn">
+                <span class="mode-icon">🤖</span>
+                <div>Player vs Computer</div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Color Selection Screen (for PvE only) -->
+<div id="color-selection" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h2>เลือกสีของคุณ</h2>
+        <div class="color-buttons">
+            <button id="btnWhite" class="color-btn">
+                <span class="piece-display">♔</span>
+                <div>สีขาว</div>
+            </button>
+            <button id="btnBlack" class="color-btn">
+                <span class="piece-display">♚</span>
+                <div>สีดำ</div>
+            </button>
+            <button id="btnRandom" class="color-btn">
+                <span class="piece-display">🎲</span>
+                <div>สุ่ม</div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Game -->
+<div class="main-container hidden" id="game-container">
     <div id="myBoard"></div>
 
     <div class="sidebar">
-        <div class="player-info">
-            <div><span class="player-avatar">👤</span> Player 2 (Black)</div>
+        <div class="player-info" id="player-black">
+            <div><span class="player-avatar">🤖</span> <span id="black-name">Player 2 (Black)</span></div>
+            <div id="black-thinking" class="thinking hidden">🤔 Thinking...</div>
         </div>
         
         <div class="moves-container" id="pgn-display">
             New Game.
         </div>
 
-        <div class="player-info">
-            <div><span class="player-avatar">👤</span> Player 1 (White)</div>
+        <div class="player-info" id="player-white">
+            <div><span class="player-avatar">👤</span> <span id="white-name">Player 1 (White)</span></div>
+            <div id="white-thinking" class="thinking hidden">🤔 Thinking...</div>
         </div>
 
         <div class="status" id="status">White to move</div>
 
+        <div class="game-info">
+            <span id="game-mode-display">Mode: PvP</span>
+            <span id="difficulty-display"></span>
+        </div>
+
         <div class="controls">
             <button id="btnNewGame" class="primary">New Game</button>
             <button id="btnFlip">Flip Board</button>
+            <button id="btnBackToMenu">Main Menu</button>
         </div>
     </div>
 </div>
 
+<!-- Promotion Dialog -->
 <div id="promotion-dialog" class="hidden">
     <div class="promotion-content">
         <h3>Choose Promotion:</h3>
