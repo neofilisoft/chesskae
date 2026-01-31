@@ -592,9 +592,7 @@ function startPvEGame() {
 
 // Control buttons
 $('#btnNewGame').on('click', function() {
-    if (confirm('Start a new game?')) {
         startNewGame();
-    }
 });
 
 $('#btnFlip').on('click', function() {
@@ -602,7 +600,6 @@ $('#btnFlip').on('click', function() {
 });
 
 $('#btnBackToMenu').on('click', function() {
-    if (confirm('Return to main menu? Current game will be lost.')) {
         $('#game-container').addClass('hidden');
         $('#mode-selection').removeClass('hidden');
         game.reset();
@@ -611,12 +608,12 @@ $('#btnBackToMenu').on('click', function() {
         engineThinking = false;
         hideThinking('w');
         hideThinking('b');
-    }
 });
 
 // Initialize
 $(document).ready(function() {
     updateStatus();
 });
+
 
 
