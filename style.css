@@ -152,7 +152,6 @@ button.primary:hover {
     border-radius: 3px;
     font-weight: bold;
     color: #fff;
-    border-left: 4px solid var(--highlight);
 }
 
 .game-info {
@@ -574,4 +573,5 @@ button.primary:hover {
         font-size: 11px;
     }
 }
+
 
