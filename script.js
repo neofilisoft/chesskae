@@ -4,16 +4,17 @@ var $status = $('#status');
 var $pgn = $('#pgn-display');
 var sourceSquare = null;
 var destinationSquare = null;
+var moveSound = new Audio('sfx/move.ogg');
+var checkSound = new Audio('sfx/check.ogg');
 
-// Game mode variables
-var gameMode = 'pvp'; // 'pvp' or 'pve'
-var playerColor = 'white'; // 'white' or 'black' (for PvE mode)
-var engineThinking = false;
-var aiDifficulty = 2; // Depth of minimax search (1-4) - Lower = Faster
+var gameMode = 'pvp';
+var playerColor = 'white';
+var aiDifficulty = 2;
+moveSound.volume = 0.3;
+checkSound.volume = 0.3;
 
 // === AI ENGINE FUNCTIONS ===
 
-// Piece values for evaluation
 var pieceValues = {
     'p': 100,
     'n': 320,
@@ -23,7 +24,6 @@ var pieceValues = {
     'k': 20000
 };
 
-// Evaluate board position
 function evaluateBoard(game) {
     var totalEvaluation = 0;
     var board = game.board();
@@ -608,3 +608,4 @@ $('#btnBackToMenu').on('click', function() {
 $(document).ready(function() {
     updateStatus();
 });
+
