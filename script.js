@@ -48,7 +48,6 @@ function getPieceValue(piece, x, y) {
     return baseValue + positionBonus;
 }
 
-// Position bonuses for pieces
 function getPositionBonus(pieceType, color, x, y) {
     // Adjust for black pieces (flip board)
     if (color === 'b') {
@@ -232,6 +231,11 @@ function makeEngineMove(from, to, promotion) {
     
     if (move) {
         board.position(game.fen(), true);
+        if (!game.in_check()) {
+            moveSound.currentTime = 0;
+            moveSound.play().catch(e => console.log("Audio play failed:", e));
+        }
+        
         updateStatus();
         engineThinking = false;
         hideThinking(move.color);
@@ -322,6 +326,10 @@ function executeMove(source, target, promoPiece = 'q') {
     if (move === null) return 'snapback';
 
     board.position(game.fen(), false);
+    if (!game.in_check()) {
+        moveSound.currentTime = 0;
+        moveSound.play().catch(e => console.log("Audio play failed:", e));
+    }
     updateStatus();
     removeHighlights();
     sourceSquare = null;
@@ -464,6 +472,8 @@ function updateStatus() {
         status = moveColor + ' to move';
         if (game.in_check()) {
             status += ', ' + moveColor + ' is in check';
+            checkSound.currentTime = 0;
+            checkSound.play().catch(e => console.log("Audio play failed:", e));
         }
     }
 
@@ -608,4 +618,5 @@ $('#btnBackToMenu').on('click', function() {
 $(document).ready(function() {
     updateStatus();
 });
+
 
