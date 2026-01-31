@@ -6,12 +6,14 @@ var sourceSquare = null;
 var destinationSquare = null;
 var moveSound = new Audio('sfx/move.ogg');
 var checkSound = new Audio('sfx/check.ogg');
+var checkSound = new Audio('sfx/checkmate.ogg');
 
 var gameMode = 'pvp';
 var playerColor = 'white';
 var aiDifficulty = 2;
 moveSound.volume = 0.3;
 checkSound.volume = 0.3;
+checkmateSound.volume = 0.3;
 
 // === AI ENGINE FUNCTIONS ===
 
@@ -466,8 +468,12 @@ function updateStatus() {
 
     if (game.in_checkmate()) {
         status = 'Game over, ' + moveColor + ' is in checkmate.';
+        checkmateSound.currentTime = 0;
+        checkmateSound.play().catch(e => console.log("Audio play failed:", e));
     } else if (game.in_draw()) {
         status = 'Game over, drawn position';
+        checkmateSound.currentTime = 0;
+        checkmateSound.play().catch(e => console.log("Audio play failed:", e));
     } else {
         status = moveColor + ' to move';
         if (game.in_check()) {
@@ -614,6 +620,7 @@ $('#btnBackToMenu').on('click', function() {
 $(document).ready(function() {
     updateStatus();
 });
+
 
 
 
