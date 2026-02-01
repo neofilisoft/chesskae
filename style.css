@@ -534,6 +534,59 @@ button.primary:hover {
     }
 }
 
+.settings-trigger {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    width: 40px !important;
+    height: 40px;
+    padding: 0 !important;
+    font-size: 20px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 50% !important;
+    z-index: 10;
+}
+
+.settings-content {
+    min-width: 300px !important;
+    padding: 30px !important;
+}
+
+.setting-item {
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+#volume-control {
+    width: 100%;
+    cursor: pointer;
+}
+
+.toggle-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.toggle-btn {
+    background: #363431;
+}
+
+.toggle-btn.active {
+    background: var(--highlight);
+    color: white;
+}
+
+#btnCloseSettings {
+    margin-top: 10px;
+    width: 100%;
+}
+
 /* Landscape mode for mobile */
 @media (max-height: 600px) and (orientation: landscape) {
     body {
@@ -573,5 +626,6 @@ button.primary:hover {
         font-size: 11px;
     }
 }
+
 
 
