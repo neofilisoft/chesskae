@@ -11,6 +11,7 @@ var checkmateSound = new Audio('sfx/Checkmate.ogg');
 var gameMode = 'pvp';
 var playerColor = 'white';
 var engineThinking = false;
+var showHints = true;
 var aiDifficulty = 2; // Depth of minimax search (1-5)
 
 moveSound.volume = 0.3;
