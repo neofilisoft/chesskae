@@ -52,6 +52,7 @@
 
 <!-- Main Game -->
 <div class="main-container hidden" id="game-container">
+    <button id="btnSettings" class="settings-trigger">⚙️</button>
     <div id="myBoard"></div>
 
     <div class="sidebar">
@@ -96,7 +97,25 @@
         </div>
     </div>
 </div>
-
+    
+<div id="settings-dialog" class="modal-overlay hidden">
+    <div class="modal-content settings-content">
+        <h2>Settings</h2>
+        <div class="setting-item">
+            <label>Volume: <span id="vol-value">30%</span></label>
+            <input type="range" id="volume-control" min="0" max="100" value="30">
+        </div>
+        <div class="setting-item">
+            <label>Move Hints:</label>
+            <div class="toggle-buttons">
+                <button id="btnHintOn" class="toggle-btn active">On</button>
+                <button id="btnHintOff" class="toggle-btn">Off</button>
+            </div>
+        </div>
+        <button id="btnCloseSettings" class="primary">Close</button>
+    </div>
+</div>
+    
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
@@ -104,5 +123,6 @@
 
 </body>
 </html>
+
 
 
