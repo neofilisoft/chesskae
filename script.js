@@ -423,6 +423,7 @@ function onMouseoutSquare(square, piece) {
 
 function addHint(square) {
     var $square = $('#myBoard .square-' + square);
+    if ($square.find('.hint-circle, .hint-ring').length > 0) return;
     var piece = game.get(square);
     if (piece) {
         $square.append('<div class="hint-ring"></div>');
