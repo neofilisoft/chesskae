@@ -408,6 +408,7 @@ $('#myBoard').on('click', '.square-55d63', function() {
 });
 
 function onMouseoverSquare(square, piece) {
+    if (!showHints) return;
     var moves = game.moves({ square: square, verbose: true });
     if (moves.length === 0) return;
 
@@ -594,6 +595,38 @@ $('#btnBackToMenu').on('click', function() {
         engineThinking = false;
         hideThinking('w');
         hideThinking('b');
+});
+
+$('#btnSettings').on('click', function() {
+    $('#settings-dialog').removeClass('hidden');
+});
+
+$('#btnCloseSettings').on('click', function() {
+    $('#settings-dialog').addClass('hidden');
+});
+
+$('#volume-control').on('input', function() {
+    var vol = $(this).val();
+    var decimalVol = vol / 100;
+    
+    moveSound.volume = decimalVol;
+    checkSound.volume = decimalVol;
+    checkmateSound.volume = decimalVol;
+    
+    $('#vol-value').text(vol + '%');
+});
+
+$('#btnHintOn').on('click', function() {
+    showHints = true;
+    $(this).addClass('active');
+    $('#btnHintOff').removeClass('active');
+});
+
+$('#btnHintOff').on('click', function() {
+    showHints = false;
+    $(this).addClass('active');
+    $('#btnHintOn').removeClass('active');
+    removeHints(); // ลบ Hint ที่ค้างอยู่ทันที
 });
 
 // Initialize
