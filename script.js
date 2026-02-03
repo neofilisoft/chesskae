@@ -24,7 +24,7 @@ checkSound.volume = 0.3;
 checkmateSound.volume = 0.3;
 
 // --- Server ---
-// const SERVER_URL = "https://your-server-url";
+const SERVER_URL = "https://unmovingly-overcaustic-evon.ngrok-free.dev";
 const socket = io(SERVER_URL);
 
 // === SOCKET LISTENERS ===
