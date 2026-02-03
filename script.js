@@ -18,8 +18,6 @@ var aiDifficulty = 2;
 var currentRoom = null;
 var isHost = false;
 var myColor = 'white';
-var syncTimer = null;
-var lastMove = -1;
 
 moveSound.volume = 0.3;
 checkSound.volume = 0.3;
@@ -28,23 +26,7 @@ checkmateSound.volume = 0.3;
 const SERVER_URL = "https://unmovingly-overcaustic-evon.ngrok-free.dev"; 
 const socket = io(SERVER_URL);
 
-// === ONLINE FUNCTIONS ===
-
-// ฟังก์ชันสร้างห้อง (ส่งคำสั่งไป Server)
-function createRoom(color) {
-    socket.emit('createRoom', { color: color });
-    myColor = color;
-    isHost = true;
-}
-
-function joinRoom(code) {
-    currentRoom = code;
-    socket.emit('joinRoom', code);
-}
-
 // === SOCKET LISTENERS ===
-
-// โชว์รหัส
 socket.on('roomCreated', function(code) {
     currentRoom = code;
     $('#create-room').addClass('hidden');
@@ -56,11 +38,11 @@ socket.on('startGame', function(data) {
     currentRoom = data.roomCode;
     $('#room-code').addClass('hidden');
     $('#join-room').addClass('hidden');
+    $('#online-menu').addClass('hidden');
+    $('#mode-selection').addClass('hidden');
     $('#game-container').removeClass('hidden');
     
     gameMode = 'online';
-    
-    // ตั้งค่าสี
     if (!isHost) {
         myColor = data.hostColor === 'white' ? 'black' : 'white';
         playerColor = myColor;
@@ -70,27 +52,16 @@ socket.on('startGame', function(data) {
     
     updatePlayerNames();
     startNewGame();
-    
-    if (myColor === 'black') {
-        board.flip();
-    }
+    if (myColor === 'black') board.flip();
 });
 
 socket.on('moveMade', function(move) {
     game.move(move);
     board.position(game.fen());
     updateStatus();
-    
-    if (game.in_checkmate()) {
-        checkmateSound.play().catch(e => {});
-    } else if (game.in_check()) {
-        checkSound.play().catch(e => {});
-    } else {
-        moveSound.play().catch(e => {});
-    }
+    playSound();
 });
 
-// 4. แจ้งเตือน Error หรือหลุด
 socket.on('error', function(msg) {
     alert(msg);
 });
@@ -100,11 +71,11 @@ socket.on('playerDisconnected', function() {
     location.reload();
 });
 
+// === CORE LOGIC ===
 function onDragStart (source, piece, position, orientation) {
     if (game.game_over()) return false;
     if (gameMode === 'pve' && engineThinking) return false;
 
-    // Online: ห้ามเดินถ้าไม่ใช่ตาเรา หรือไม่ใช่สีเรา
     if (gameMode === 'online') {
         if (game.turn() === 'w' && myColor === 'black') return false;
         if (game.turn() === 'b' && myColor === 'white') return false;
@@ -118,25 +89,7 @@ function onDragStart (source, piece, position, orientation) {
 }
 
 function onDrop(source, target) {
-    if (source === target) {
-        if (sourceSquare === source) {
-            removeHighlights();
-            sourceSquare = null;
-            return;
-        }
-        
-        var piece = game.get(source);
-        if (piece && piece.color === game.turn()) {
-            removeHighlights();
-            sourceSquare = source;
-            highlightSquare(source);
-            return;
-        }
-        return;
-    }
-
     removeHighlights();
-    
     if (isPromotion(source, target)) {
         sourceSquare = source;
         destinationSquare = target;
@@ -145,6 +98,295 @@ function onDrop(source, target) {
     }
 
     var result = executeMove(source, target);
+    if (result === 'snapback') return 'snapback';
+}
+
+function executeMove(source, target, promotion = 'q') {
+    var move = game.move({ from: source, to: target, promotion: promotion });
+    if (move === null) return 'snapback';
+
+    if (gameMode === 'online' && currentRoom) {
+        socket.emit('makeMove', { code: currentRoom, move: move });
+    }
+
+    board.position(game.fen());
+    updateStatus();
+    playSound();
+
+    sourceSquare = null;
+    destinationSquare = null;
+
+    if (gameMode === 'pve' && !game.game_over()) {
+        setTimeout(makeBestMove, 250);
+    }
+}
+
+function playSound() {
+    if (game.in_checkmate()) checkmateSound.play().catch(e=>{});
+    else if (game.in_check()) checkSound.play().catch(e=>{});
+    else moveSound.play().catch(e=>{});
+}
+
+function isPromotion(source, target) {
+    var piece = game.get(source);
+    if (!piece || piece.type !== 'p') return false;
+    return (piece.color === 'w' && target[1] === '8') || (piece.color === 'b' && target[1] === '1');
+}
+
+function choosePromotion(pieceType) {
+    $('#promotion-dialog').addClass('hidden');
+    executeMove(sourceSquare, destinationSquare, pieceType);
+}
+
+// === UI INITIALIZATION ===
+$(document).ready(function() {
+    // Mode Buttons
+    $('#btnPvP').on('click', function() {
+        gameMode = 'pvp';
+        playerColor = 'white';
+        $('#mode-selection').addClass('hidden');
+        $('#game-container').removeClass('hidden');
+        updatePlayerNames();
+        startNewGame();
+    });
+
+    $('#btnPvE').on('click', function() {
+        gameMode = 'pve';
+        $('#mode-selection').addClass('hidden');
+        $('#color-selection').removeClass('hidden');
+    });
+
+    $('#btnOnline').on('click', function() {
+        gameMode = 'online';
+        $('#mode-selection').addClass('hidden');
+        $('#online-menu').removeClass('hidden');
+    });
+
+    // Online Menu Buttons
+    $('#btnCreateRoom').on('click', function() {
+        $('#online-menu').addClass('hidden');
+        $('#create-room').removeClass('hidden');
+    });
+
+    $('#btnJoinRoom').on('click', function() {
+        $('#online-menu').addClass('hidden');
+        $('#join-room').removeClass('hidden');
+    });
+
+    $('.color-btn').on('click', function() {
+        var color = $(this).attr('data-color');
+        if (gameMode === 'online') {
+            socket.emit('createRoom', { color: color });
+            myColor = color;
+            isHost = true;
+        } else {
+            playerColor = color;
+            $('#color-selection').addClass('hidden');
+            $('#game-container').removeClass('hidden');
+            updatePlayerNames();
+            startNewGame();
+        }
+    });
+
+    $('#btnJoinConfirm').on('click', function() {
+        var code = $('#room-input').val().toUpperCase().trim();
+        if (code) {
+            currentRoom = code;
+            socket.emit('joinRoom', code);
+        }
+    });
+
+    $('#btnBackToMenu').on('click', function() {
+        if (gameMode === 'online') location.reload();
+        else {
+            $('#game-container').addClass('hidden');
+            $('#mode-selection').removeClass('hidden');
+            game.reset();
+            board.start();
+        }
+    });
+
+    $('.back-btn').on('click', function() {
+        $(this).closest('.modal-overlay').addClass('hidden');
+        if ($(this).closest('#create-room').length || $(this).closest('#join-room').length) {
+            $('#online-menu').removeClass('hidden');
+        } else {
+            $('#mode-selection').removeClass('hidden');
+        }
+    });
+
+    // Other Buttons
+    $('#btnNewGame').on('click', startNewGame);
+    $('#btnFlip').on('click', function() { board.flip(); });
+    $('#btnSettings').on('click', function() { $('#settings-dialog').removeClass('hidden'); });
+    $('#btnCloseSettings').on('click', function() { $('#settings-dialog').addClass('hidden'); });
+});
+
+// === FUNCTIONS (Hints, AI, Status) ===
+function onMouseoverSquare(square, piece) {
+    if (!showHints) return;
+    var moves = game.moves({ square: square, verbose: true });
+    if (moves.length === 0) return;
+    for (var i = 0; i < moves.length; i++) addHint(moves[i].to);
+}
+
+function onMouseoutSquare(square, piece) {
+    removeHighlights();
+    if (sourceSquare) highlightSquare(sourceSquare);
+}
+
+function highlightSquare(square) {
+    $('#myBoard .square-' + square).addClass('highlight');
+}
+
+function addHint(square) {
+    $('#myBoard .square-' + square).append('<div class="hint"></div>');
+}
+
+function removeHighlights() {
+    $('#myBoard .square-55d63').removeClass('highlight');
+    $('#myBoard .square-55d63 .hint').remove();
+}
+
+function updateStatus() {
+    var status = game.turn() === 'w' ? 'White to move' : 'Black to move';
+    if (game.in_checkmate()) status = 'Checkmate!';
+    else if (game.in_draw()) status = 'Draw!';
+    $status.text(status);
+    $pgn.html(game.pgn());
+}
+
+function updatePlayerNames() {
+    if (gameMode === 'pve') {
+        $('#top-player-name').text('Computer (Lvl ' + aiDifficulty + ')');
+        $('#bottom-player-name').text('You');
+    } else if (gameMode === 'online') {
+        $('#top-player-name').text('Opponent');
+        $('#bottom-player-name').text('You');
+    } else {
+        $('#top-player-name').text('Player 2');
+        $('#bottom-player-name').text('Player 1');
+    }
+}
+
+function startNewGame() {
+    game.reset();
+    board.start();
+    board.orientation(playerColor); 
+    updateStatus();
+    if (gameMode === 'pve' && playerColor === 'black') setTimeout(makeBestMove, 250);
+}
+
+// AI Logic (Minimax)
+function makeBestMove() {
+    if (game.game_over()) return;
+    engineThinking = true;
+    showThinking(playerColor === 'white' ? 'b' : 'w');
+    setTimeout(function() {
+        var bestMove = minimaxRoot(aiDifficulty, game, true);
+        game.move(bestMove);
+        board.position(game.fen());
+        updateStatus();
+        playSound();
+        engineThinking = false;
+        hideThinking();
+    }, 100);
+}
+
+function showThinking(color) {
+    var $el = color === 'w' ? $('#bottom-player-name') : $('#top-player-name');
+    $el.append('<span class="thinking">...</span>');
+}
+
+function hideThinking() { $('.thinking').remove(); }
+
+function minimaxRoot(depth, game, isMaximisingPlayer) {
+    var newGameMoves = game.moves();
+    var bestMove = -9999;
+    var bestMoveFound;
+    for(var i = 0; i < newGameMoves.length; i++) {
+        var newGameMove = newGameMoves[i];
+        game.move(newGameMove);
+        var value = minimax(depth - 1, game, -10000, 10000, !isMaximisingPlayer);
+        game.undo();
+        if(value >= bestMove) {
+            bestMove = value;
+            bestMoveFound = newGameMove;
+        }
+    }
+    return bestMoveFound;
+}
+
+function minimax(depth, game, alpha, beta, isMaximisingPlayer) {
+    if (depth === 0) return -evaluateBoard(game.board());
+    var newGameMoves = game.moves();
+    if (isMaximisingPlayer) {
+        var bestMove = -9999;
+        for (var i = 0; i < newGameMoves.length; i++) {
+            game.move(newGameMoves[i]);
+            bestMove = Math.max(bestMove, minimax(depth - 1, game, alpha, beta, !isMaximisingPlayer));
+            game.undo();
+            alpha = Math.max(alpha, bestMove);
+            if (beta <= alpha) return bestMove;
+        }
+        return bestMove;
+    } else {
+        var bestMove = 9999;
+        for (var i = 0; i < newGameMoves.length; i++) {
+            game.move(newGameMoves[i]);
+            bestMove = Math.min(bestMove, minimax(depth - 1, game, alpha, beta, !isMaximisingPlayer));
+            game.undo();
+            beta = Math.min(beta, bestMove);
+            if (beta <= alpha) return bestMove;
+        }
+        return bestMove;
+    }
+}
+
+function evaluateBoard(board) {
+    var totalEvaluation = 0;
+    for (var i = 0; i < 8; i++) {
+        for (var j = 0; j < 8; j++) {
+            totalEvaluation = totalEvaluation + getPieceValue(board[i][j], i ,j);
+        }
+    }
+    return totalEvaluation;
+}
+
+function getPieceValue(piece, x, y) {
+    if (piece === null) return 0;
+    var val = 0;
+    if (piece.type === 'p') val = 10 + (piece.color === 'w' ? pawnEvalWhite[y][x] : pawnEvalBlack[y][x]);
+    else if (piece.type === 'r') val = 50 + (piece.color === 'w' ? rookEvalWhite[y][x] : rookEvalBlack[y][x]);
+    else if (piece.type === 'n') val = 30 + knightEval[y][x];
+    else if (piece.type === 'b') val = 30 + (piece.color === 'w' ? bishopEvalWhite[y][x] : bishopEvalBlack[y][x]);
+    else if (piece.type === 'q') val = 90 + evalQueen[y][x];
+    else if (piece.type === 'k') val = 900 + (piece.color === 'w' ? kingEvalWhite[y][x] : kingEvalBlack[y][x]);
+    return piece.color === 'w' ? val : -val;
+}
+
+// ตาราง Eval
+var pawnEvalWhite = [[0,0,0,0,0,0,0,0],[5,5,5,5,5,5,5,5],[1,1,2,3,3,2,1,1],[0.5,0.5,1,2.5,2.5,1,0.5,0.5],[0,0,0,2,2,0,0,0],[0.5,-0.5,-1,0,0,-1,-0.5,0.5],[0.5,1,1,-2,-2,1,1,0.5],[0,0,0,0,0,0,0,0]];
+var pawnEvalBlack = pawnEvalWhite.slice().reverse();
+var knightEval = [[-5,-4,-3,-3,-3,-3,-4,-5],[-4,-2,0,0,0,0,-2,-4],[-3,0,1,1.5,1.5,1,0,-3],[-3,0.5,1.5,2,2,1.5,0.5,-3],[-3,0,1.5,2,2,1.5,0,-3],[-3,0.5,1,1.5,1.5,1,0.5,-3],[-4,-2,0,0.5,0.5,0,-2,-4],[-5,-4,-3,-3,-3,-3,-4,-5]];
+var bishopEvalWhite = [[-2,-1,-1,-1,-1,-1,-1,-2],[-1,0,0,0,0,0,0,-1],[-1,0,0.5,1,1,0.5,0,-1],[-1,0.5,0.5,1,1,0.5,0.5,-1],[-1,0,1,1,1,1,0,-1],[-1,1,1,1,1,1,1,-1],[-1,0.5,0,0,0,0,0.5,-1],[-2,-1,-1,-1,-1,-1,-1,-2]];
+var bishopEvalBlack = bishopEvalWhite.slice().reverse();
+var rookEvalWhite = [[0,0,0,0,0,0,0,0],[0.5,1,1,1,1,1,1,0.5],[-0.5,0,0,0,0,0,0,-0.5],[-0.5,0,0,0,0,0,0,-0.5],[-0.5,0,0,0,0,0,0,-0.5],[-0.5,0,0,0,0,0,0,-0.5],[-0.5,0,0,0,0,0,0,-0.5],[0,0,0,0.5,0.5,0,0,0]];
+var rookEvalBlack = rookEvalWhite.slice().reverse();
+var evalQueen = [[-2,-1,-1,-0.5,-0.5,-1,-1,-2],[-1,0,0,0,0,0,0,-1],[-1,0,0.5,0.5,0.5,0.5,0,-1],[-0.5,0,0.5,0.5,0.5,0.5,0,-0.5],[0,0,0.5,0.5,0.5,0.5,0,-0.5],[-1,0.5,0.5,0.5,0.5,0.5,0,-1],[-1,0,0.5,0,0,0,0,-1],[-2,-1,-1,-0.5,-0.5,-1,-1,-2]];
+var kingEvalWhite = [[-3,-4,-4,-5,-5,-4,-4,-3],[-3,-4,-4,-5,-5,-4,-4,-3],[-3,-4,-4,-5,-5,-4,-4,-3],[-3,-4,-4,-5,-5,-4,-4,-3],[-2,-3,-3,-4,-4,-3,-3,-2],[-1,-2,-2,-2,-2,-2,-2,-1],[2,2,0,0,0,0,2,2],[2,3,1,0,0,1,3,2]];
+var kingEvalBlack = kingEvalWhite.slice().reverse();
+
+// Initialize Board
+board = Chessboard('myBoard', {
+    draggable: true,
+    position: 'start',
+    onDragStart: onDragStart,
+    onDrop: onDrop,
+    onMouseoutSquare: onMouseoutSquare,
+    onMouseoverSquare: onMouseoverSquare
+});
+updateStatus();
     if (result === 'snapback') return 'snapback';
 }
 
@@ -318,7 +560,6 @@ board = Chessboard('myBoard', config);
 updateStatus();
 
 // === UI Handlers ===
-
 $('#btnPvP').on('click', function() {
     gameMode = 'pvp';
     playerColor = 'white';
@@ -353,7 +594,6 @@ $('.color-btn').on('click', function() {
     var color = $(this).attr('data-color');
     
     if (gameMode === 'online') {
-        // แก้ไข: เรียก createRoom ที่แก้แล้ว
         createRoom(color);
     } else {
         // PvE Logic
@@ -459,7 +699,6 @@ $('#btnHintOff').on('click', function() {
 });
 
 // === AI Logic ===
-
 function makeBestMove() {
     if (game.game_over()) return;
 
@@ -653,5 +892,6 @@ var kingEvalWhite = [
     [  2.0,  2.0,  0.0,  0.0,  0.0,  0.0,  2.0,  2.0 ],
     [  2.0,  3.0,  1.0,  0.0,  0.0,  1.0,  3.0,  2.0 ]
 ];
+
 
 var kingEvalBlack = kingEvalWhite.slice().reverse();
