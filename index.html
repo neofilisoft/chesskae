@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chesskae - หมากรุกสากล </title>
+    <link rel="icon" type="image/png" href="chess.png">
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Game Mode Selection Screen -->
+<div id="mode-selection" class="modal-overlay">
+    <div class="modal-content">
+        <h2>เลือกโหมดเกม</h2>
+        <div class="mode-buttons">
+            <button id="btnPvP" class="mode-btn">
+                <span class="mode-icon">👥</span>
+                <div>Player vs Player</div>
+            </button>
+            <button id="btnOnline" class="mode-btn">
+                <span class="mode-icon">🌐</span>
+                <div>Online Match</div>
+            </button>
+            <button id="btnPvE" class="mode-btn">
+                <span class="mode-icon">🤖</span>
+                <div>Player vs Computer</div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Color Selection Screen (for PvE only) -->
+<div id="color-selection" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h2>เลือกสีของคุณ</h2>
+        <div class="color-buttons">
+            <button id="btnWhite" class="color-btn">
+                <span class="piece-display">♔</span>
+                <div>สีขาว</div>
+            </button>
+            <button id="btnBlack" class="color-btn">
+                <span class="piece-display">♚</span>
+                <div>สีดำ</div>
+            </button>
+            <button id="btnRandom" class="color-btn">
+                <span class="piece-display">🎲</span>
+                <div>สุ่ม</div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Online Selection -->
+<div id="online-selection" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h2>🌐 Online Match</h2>
+        <div class="mode-buttons">
+            <button id="btnCreateRoom" class="mode-btn">
+                <span class="mode-icon">➕</span>
+                <div>สร้างห้อง</div>
+            </button>
+            <button id="btnJoinRoom" class="mode-btn">
+                <span class="mode-icon">🚪</span>
+                <div>เข้าร่วม</div>
+            </button>
+        </div>
+        <button id="btnBackOnline" style="margin-top:20px;width:100%;">กลับ</button>
+    </div>
+</div>
+
+<!-- Create Room -->
+<div id="create-room" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h2>สร้างห้อง</h2>
+        <div class="color-buttons">
+            <button id="btnCreateWhite" class="color-btn">
+                <span class="piece-display">♔</span>
+                <div>สีขาว</div>
+            </button>
+            <button id="btnCreateBlack" class="color-btn">
+                <span class="piece-display">♚</span>
+                <div>สีดำ</div>
+            </button>
+        </div>
+        <button id="btnBackCreate" style="margin-top:20px;width:100%;">กลับ</button>
+    </div>
+</div>
+
+<!-- Room Code -->
+<div id="room-code" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h2>รหัสห้อง</h2>
+        <div style="background:#1a1918;padding:20px;border-radius:8px;margin:20px 0;">
+            <div style="font-size:32px;font-weight:bold;color:#3692e7;font-family:monospace;letter-spacing:3px;" id="room-code-display">XXXXXX</div>
+            <button id="btnCopyCode" style="margin-top:15px;">📋 คัดลอก</button>
+        </div>
+        <div style="color:#ff9800;margin:15px 0;">⏳ รอผู้เล่น...</div>
+        <button id="btnCancelRoom">ยกเลิก</button>
+    </div>
+</div>
+
+<!-- Join Room -->
+<div id="join-room" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h2>เข้าร่วมห้อง</h2>
+        <input type="text" id="room-input" placeholder="รหัสห้อง" maxlength="6" style="width:100%;padding:15px;font-size:18px;text-align:center;background:#1a1918;border:2px solid #3c3b39;color:#fff;border-radius:5px;margin:20px 0;text-transform:uppercase;font-family:monospace;letter-spacing:2px;">
+        <div id="join-error" class="hidden" style="color:#f44336;margin-bottom:10px;">ไม่พบห้อง</div>
+        <button id="btnJoinConfirm" class="primary" style="width:100%;">เข้าร่วม</button>
+        <button id="btnBackJoin" style="margin-top:10px;width:100%;">กลับ</button>
+    </div>
+</div>
+
+<!-- Main Game -->
+<div class="main-container hidden" id="game-container">
+    <button id="btnSettings" class="settings-trigger"><span class="material-icons">settings</span></button>
+    <div id="myBoard"></div>
+
+    <div class="sidebar">
+        <div class="player-info" id="player-black">
+            <div><span class="player-avatar">👤</span> <span id="black-name">Player 2 (Black)</span></div>
+            <div id="black-thinking" class="thinking hidden">🤔 Thinking...</div>
+        </div>
+        
+        <div class="moves-container" id="pgn-display">
+            New Game.
+        </div>
+
+        <div class="player-info" id="player-white">
+            <div><span class="player-avatar">👤</span> <span id="white-name">Player 1 (White)</span></div>
+            <div id="white-thinking" class="thinking hidden">🤔 Thinking...</div>
+        </div>
+
+        <div class="status" id="status">White to move</div>
+
+        <div class="game-info">
+            <span id="game-mode-display">Mode: PvP</span>
+            <span id="difficulty-display"></span>
+        </div>
+
+        <div class="controls">
+            <button id="btnNewGame" class="primary">New Game</button>
+            <button id="btnFlip">Flip Board</button>
+            <button id="btnBackToMenu">Main Menu</button>
+        </div>
+    </div>
+</div>
+
+<!-- Promotion Dialog -->
+<div id="promotion-dialog" class="hidden">
+    <div class="promotion-content">
+        <h3>Choose Promotion:</h3>
+        <div class="promo-options">
+            <button onclick="choosePromotion('q')">♛ Queen</button>
+            <button onclick="choosePromotion('n')">♞ Knight</button>
+            <button onclick="choosePromotion('r')">♜ Rook</button>
+            <button onclick="choosePromotion('b')">♝ Bishop</button>
+        </div>
+    </div>
+</div>
+
+<div id="settings-dialog" class="modal-overlay hidden">
+    <div class="modal-content settings-content">
+        <h2>Settings</h2>
+        <div class="setting-item">
+            <label>Volume: <span id="vol-value">30%</span></label>
+            <input type="range" id="volume-control" min="0" max="100" value="30">
+        </div>
+        <div class="setting-item">
+            <label>Move Hints:</label>
+            <div class="toggle-buttons">
+                <button id="btnHintOn" class="toggle-btn active">On</button>
+                <button id="btnHintOff" class="toggle-btn">Off</button>
+            </div>
+        </div>
+        <button id="btnCloseSettings" class="primary">Close</button>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="script.js"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+</body>
+</html>
