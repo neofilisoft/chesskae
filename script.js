@@ -25,15 +25,49 @@ moveSound.volume = 0.3;
 checkSound.volume = 0.3;
 checkmateSound.volume = 0.3;
 
+var pieceValues = {
+    'p': 100,
+    'n': 320,
+    'b': 330,
+    'r': 500,
+    'q': 900,
+    'k': 20000
+};
+
+function evaluateBoard(game) {
+    var totalEvaluation = 0;
+    var board = game.board();
+    
+    for (var i = 0; i < 8; i++) {
+        for (var j = 0; j < 8; j++) {
+            var piece = board[i][j];
+            if (piece) {
+                var value = getPieceValue(piece, i, j);
+                totalEvaluation += piece.color === 'w' ? value : -value;
+            }
+        }
+    }
+    
+    return totalEvaluation;
+}
+
 // Self-hosted server
 var socket = null;
+const NGROK_URL = "https://unmovingly-overcaustic-evon.ngrok-free.dev";
 try {
-    const SERVER_URL = "https://unmovingly-overcaustic-evon.ngrok-free.dev";
+    const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? "http://localhost:3000" 
+    : "https://unmovingly-overcaustic-evon.ngrok-free.dev";
+
     socket = io(SERVER_URL, {
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         reconnectionAttempts: 5
+    });
+    
+    socket.on('connect', () => {
+        console.log('Connected to server successfully');
     });
     
     socket.on('connect_error', (error) => {
