@@ -430,7 +430,9 @@ function updateStatus() {
     }
     
     $status.html(status);
-    $pgn.html(game.pgn());
+    var pgn = game.pgn();
+    var formattedPgn = pgn.replace(/ (\d+\.)/g, '\n$1');    
+    $pgn.html(formattedPgn);
 }
 
 function updatePlayerNames() {
