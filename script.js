@@ -372,6 +372,16 @@ function removeHighlights() {
 function onSnapEnd() {
     board.position(game.fen());
 }
+function onDragStart(source, piece, position, orientation) {
+    if (game.game_over()) return false;
+
+    if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+        (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
+        return false;
+    }
+
+    return true;
+}
 
 function startNewGame() {
     game.reset();
