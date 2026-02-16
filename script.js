@@ -34,123 +34,137 @@ var pieceValues = {
     'k': 10000
 };
 
-// Self-hosted server
+// Self-hosted / external server (Socket.IO)
 var socket = null;
-const NGROK_URL = "https://unmovingly-overcaustic-evon.ngrok-free.dev";
-try {
-    const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? "http://localhost:3000" 
-    : "https://unmovingly-overcaustic-evon.ngrok-free.dev";
 
-    socket = io(SERVER_URL, {
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5
-    });
-    
-    socket.on('connect', () => {
-        console.log('Connected to server successfully');
-    });
-    
-    socket.on('connect_error', (error) => {
-        console.warn('Socket connection error:', error);
-    });
-} catch (e) {
-    console.warn('Socket.IO initialization failed:', e);
-    socket = null;
+function getServerUrl() {
+    // Priority: ?server=  -> localStorage -> localhost (dev) -> empty (disable online)
+    try {
+        const qs = new URLSearchParams(window.location.search);
+        const fromQuery = qs.get('server');
+        if (fromQuery && fromQuery.trim()) {
+            const u = fromQuery.trim().replace(/\/$/, '');
+            localStorage.setItem('CHESSKAE_SERVER_URL', u);
+            return u;
+        }
+        const saved = localStorage.getItem('CHESSKAE_SERVER_URL');
+        if (saved && saved.trim()) return saved.trim().replace(/\/$/, '');
+    } catch (e) {}
+
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return "http://localhost:3000";
+    }
+    return ""; // production requires explicit server url
+}
+
+function ensureSocketConnected() {
+    const SERVER_URL = getServerUrl();
+
+    if (socket && socket.connected) return true;
+
+    if (!SERVER_URL) {
+        alert('Online server ยังไม่ได้ตั้งค่า\n\nใส่ URL ผ่าน ?server=https://YOUR-SERVER หรือบันทึกไว้ใน localStorage key: CHESSKAE_SERVER_URL');
+        return false;
+    }
+
+    try {
+        if (!socket) {
+            socket = io(SERVER_URL, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                reconnectionAttempts: 10,
+                timeout: 8000
+            });
+
+            socket.on('connect', () => console.log('Connected to server:', SERVER_URL));
+            socket.on('connect_error', (error) => console.warn('Socket connection error:', error));
+
+            registerOnlineListeners(); // register once
+        } else {
+            socket.connect();
+        }
+        return true;
+    } catch (e) {
+        console.warn('Socket.IO initialization failed:', e);
+        socket = null;
+        return false;
+    }
 }
 
 // === ONLINE FUNCTIONS ===
 function createRoom(color) {
-    if (!socket || !socket.connected) {
-        alert('Server not connected. Please check if server is running at localhost:3000');
-        return;
-    }
-    socket.emit('createRoom', { color: color });
+    if (!ensureSocketConnected()) return;
     myColor = color;
     isHost = true;
+    socket.emit('createRoom', { color: color });
 }
 
 function joinRoom(code) {
-    if (!socket || !socket.connected) {
-        alert('Server not connected. Please check if server is running at localhost:3000');
-        return;
-    }
-    currentRoom = code;
-    socket.emit('joinRoom', code);
+    if (!ensureSocketConnected()) return;
+    isHost = false;
+    socket.emit('joinRoom', String(code || '').trim().toUpperCase());
 }
 
 // === SOCKET LISTENERS ===
-if (socket) {
-socket.on('roomCreated', function(code) {
-    currentRoom = code;
-    $('#create-room').addClass('hidden');
-    $('#room-code').removeClass('hidden');
-    $('#room-code-display').text(code);
-});
+function registerOnlineListeners() {
+    if (!socket) return;
 
-socket.on('startGame', function(data) {
-    currentRoom = data.roomCode;
-    $('#room-code').addClass('hidden');
-    $('#join-room').addClass('hidden');
-    $('#game-container').removeClass('hidden');
-    
-    gameMode = 'online';
-    
-    if (!isHost) {
-        myColor = data.hostColor === 'white' ? 'black' : 'white';
+    // prevent duplicate handler stacking
+    socket.off('roomCreated');
+    socket.off('startGame');
+    socket.off('moveMade');
+    socket.off('error');
+    socket.off('playerDisconnected');
+    socket.off('joinedRoomFailed');
+
+    socket.on('roomCreated', function(code) {
+        currentRoom = code;
+        $('#create-room').addClass('hidden');
+        $('#room-code').removeClass('hidden');
+        $('#room-code-display').text(code);
+    });
+
+    socket.on('startGame', function(data) {
+        currentRoom = data.roomCode;
+        $('#room-code').addClass('hidden');
+        $('#join-room').addClass('hidden');
+        $('#game-container').removeClass('hidden');
+        gameMode = 'online';
+
+        if (!isHost) {
+            myColor = (data.hostColor === 'white') ? 'black' : 'white';
+        }
         playerColor = myColor;
-    } else {
-        playerColor = myColor;
-    }
-    
-    updatePlayerNames();
-    startNewGame();
-    
-    if (myColor === 'black') {
-        board.flip();
-    }
-});
 
-socket.on('moveMade', function(move) {
-    game.move(move);
-    board.position(game.fen());
-    updateStatus();
-    
-    if (game.in_checkmate()) {
-        checkmateSound.play().catch(e => {});
-    } else if (game.in_check()) {
-        checkSound.play().catch(e => {});
-    } else {
-        moveSound.play().catch(e => {});
-    }
-});
+        updatePlayerNames();
+        startNewGame();
+        if (myColor === 'black') board.flip();
+    });
 
-socket.on('error', function(msg) {
-    alert(msg);
-});
+    socket.on('moveMade', function(move) {
+        if (!currentRoom) return;
+        game.move(move);
+        board.position(game.fen());
+        updateStatus();
+        if (game.in_checkmate()) checkmateSound.play().catch(e => {});
+        else if (game.in_check()) checkSound.play().catch(e => {});
+        else moveSound.play().catch(e => {});
+    });
 
-socket.on('playerDisconnected', function() {
-    alert('ฝ่ายตรงข้ามออกจากเกม');
-    location.reload();
-});
-}
+    socket.on('joinedRoomFailed', function(msg) {
+        alert(msg || 'ไม่พบห้อง');
+    });
 
-function onDragStart (source, piece, position, orientation) {
-    if (game.game_over()) return false;
-    if (gameMode === 'pve' && engineThinking) return false;
+    socket.on('error', function(msg) {
+        alert(msg);
+    });
 
-    if (gameMode === 'online') {
-        if (game.turn() === 'w' && myColor === 'black') return false;
-        if (game.turn() === 'b' && myColor === 'white') return false;
-        if (piece.search(myColor === 'white' ? /^b/ : /^w/) !== -1) return false;
-    }
-
-    if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
-        (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
-        return false;
-    }
+    socket.on('playerDisconnected', function() {
+        alert('ฝ่ายตรงข้ามออกจากเกม');
+        location.reload();
+    });
 }
 
 function onDrop(source, target) {
