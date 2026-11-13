@@ -1,1 +1,11 @@
-1
+services:
+  - type: web
+    name: chesskae-backend
+    runtime: node
+    region: singapore
+    plan: free
+    rootDir: .
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeployTrigger: commit
