@@ -1,0 +1,19 @@
+{
+  "name": "chesskae",
+  "version": "1.0.0",
+  "description": "Chesskae - Online Chess Game",
+  "main": "server.js",
+  "scripts": {
+    "build": "node -e \"require('fs').accessSync('index.html'); require('fs').accessSync('script.js'); console.log('Static build ready')\"",
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "socket.io": "^4.7.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
