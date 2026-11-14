@@ -70,8 +70,8 @@ Vercel เป็น serverless → **ไม่รองรับ Socket.IO แ�
 
 ```
 chesskae/
-├── index.html      # UI หลัก (ไม่แก้ design)
-├── style.css       # สไตล์เดิม
+├── index.html      # UI หลัก 
+├── style.css       # สไตล์
 ├── script.js       # เกม logic + AI + Socket client
 ├── server.js       # Express + Socket.IO server
 ├── sfx/            # เสียง Move / Check / Checkmate
@@ -88,16 +88,7 @@ chesskae/
 - ✅ Promotion, Check/Checkmate sound, Move hints, Volume
 - ✅ รองรับ flip board
 
-## สิ่งที่ปรับปรุง
-
-- ห้องที่รอผู้เล่นยกเลิกได้ทันที และรหัสห้องถูกสร้างแบบหลีกเลี่ยงตัวอักษรที่สับสน
-- ผู้เล่นสีดำเริ่มเกมด้วยมุมมองสีดำถูกต้อง
-- ฝั่งเซิร์ฟเวอร์ไม่ยอมรับ move จากคนที่ไม่ได้อยู่ในห้อง, สีผิด หรือเดินไม่ตรงตา
-- ปุ่ม New Game ใน Online จะรีเซ็ตพร้อมกันทั้งสองฝ่าย
-
-## ควรเพิ่ม TypeScript มั้ย?
-
-**ไม่จำเป็นตอนนี้**  
+**Mark**  
 โปรเจกต์ขนาดนี้ (vanilla JS + jQuery + chess.js + chessboard.js) เขียน TypeScript จะต้อง rewrite เกือบทั้งหมดและเพิ่ม build step โดยไม่ได้อะไรมาก  
 ถ้าอยาก scale ใหญ่ขึ้นในอนาคต (แยก module, unit test, monorepo) ค่อย migrate ก็ได้
 
