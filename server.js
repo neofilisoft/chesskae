@@ -68,6 +68,16 @@ function armRoomTimer(code, room) {
   }, TURN_TIME_MS + 25);
 }
 
+function clockPayload(room) {
+  return {
+    turnColor: room.turnColor,
+    turnDeadline: room.turnDeadline,
+    turnRemainingMs: Math.max(0, room.turnDeadline - Date.now()),
+    turnTimeMs: TURN_TIME_MS,
+    ply: room.ply
+  };
+}
+
 io.on('connection', (socket) => {
   console.log('Connected:', socket.id);
 
@@ -119,6 +129,7 @@ io.on('connection', (socket) => {
       },
       turnColor: room.turnColor,
       turnDeadline: room.turnDeadline,
+      turnRemainingMs: TURN_TIME_MS,
       turnTimeMs: TURN_TIME_MS
     });
 
@@ -145,11 +156,7 @@ io.on('connection', (socket) => {
     room.ply += 1;
     armRoomTimer(code, room);
     socket.to(code).emit('moveMade', { move: data.move, ply: room.ply });
-    io.to(code).emit('clockUpdate', {
-      turnColor: room.turnColor,
-      turnDeadline: room.turnDeadline,
-      ply: room.ply
-    });
+    io.to(code).emit('clockUpdate', clockPayload(room));
   });
 
   socket.on('requestNewGame', (data) => {
@@ -164,8 +171,22 @@ io.on('connection', (socket) => {
     io.to(data.code).emit('newGameRequested', {
       turnColor: room.turnColor,
       turnDeadline: room.turnDeadline,
+      turnRemainingMs: TURN_TIME_MS,
       turnTimeMs: TURN_TIME_MS
     });
+  });
+
+  socket.on('surrender', (data) => {
+    if (!data || !data.code) return;
+    const code = String(data.code).trim().toUpperCase();
+    const room = rooms.get(code);
+    if (!room || room.status !== 'playing') return;
+    const loser = playerColor(room, socket.id);
+    if (!loser) return;
+    const winner = loser === 'white' ? 'black' : 'white';
+    room.status = 'finished';
+    clearRoomTimer(room);
+    io.to(code).emit('gameSurrender', { loser, winner, reason: 'Surrender' });
   });
 
   socket.on('cancelRoom', (codeRaw) => {

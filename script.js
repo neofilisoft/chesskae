@@ -45,9 +45,10 @@ var pieceValues = {
 
 // Self-hosted / external server (Socket.IO)
 var socket = null;
+var DEFAULT_SERVER_URL = 'https://chesskae-backend.onrender.com';
 
 function getServerUrl() {
-    // Priority: ?server=  -> localStorage -> localhost (dev) -> empty (disable online)
+    // Priority: ?server= -> localStorage -> localhost (dev) -> production backend
     try {
         const qs = new URLSearchParams(window.location.search);
         const fromQuery = qs.get('server');
@@ -63,7 +64,7 @@ function getServerUrl() {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         return "http://localhost:3000";
     }
-    return ""; // production requires explicit server url
+    return DEFAULT_SERVER_URL;
 }
 
 function ensureSocketConnected() {
@@ -131,6 +132,7 @@ function registerOnlineListeners() {
     socket.off('roomCancelled');
     socket.off('clockUpdate');
     socket.off('gameTimeout');
+    socket.off('gameSurrender');
 
     socket.on('roomCreated', function(code) {
         currentRoom = code;
@@ -152,7 +154,7 @@ function registerOnlineListeners() {
 
         updatePlayerNames();
         startNewGame();
-        startOnlineClock(data.turnColor || 'white', data.turnDeadline, data.turnTimeMs || 90000);
+        startOnlineClock(data.turnColor || 'white', data.turnDeadline, data.turnTimeMs || 90000, data.turnRemainingMs);
     });
 
     socket.on('moveMade', function(payload) {
@@ -181,12 +183,12 @@ function registerOnlineListeners() {
 
     socket.on('newGameRequested', function(data) {
         startNewGame();
-        startOnlineClock(data && data.turnColor || 'white', data && data.turnDeadline, data && data.turnTimeMs || 90000);
+        startOnlineClock(data && data.turnColor || 'white', data && data.turnDeadline, data && data.turnTimeMs || 90000, data && data.turnRemainingMs);
     });
 
     socket.on('clockUpdate', function(data) {
         if (!data) return;
-        startOnlineClock(data.turnColor, data.turnDeadline, onlineTurnTimeMs);
+        startOnlineClock(data.turnColor, data.turnDeadline, data.turnTimeMs || onlineTurnTimeMs, data.turnRemainingMs);
     });
 
     socket.on('gameTimeout', function(data) {
@@ -197,6 +199,16 @@ function registerOnlineListeners() {
         var result = loser === myColor ? 'คุณแพ้' : 'คุณชนะ';
         $status.text('Time Out — ' + loser + ' หมดเวลา (' + result + (winner ? ', ' + winner + ' ชนะ' : '') + ')');
         updateClockDisplay(0, loser);
+        removeHighlights();
+    });
+
+    socket.on('gameSurrender', function(data) {
+        onlineTimedOut = true;
+        stopOnlineClock();
+        var loser = data && data.loser ? data.loser : 'ผู้เล่น';
+        var winner = data && data.winner ? data.winner : '';
+        var result = loser === myColor ? 'คุณแพ้' : 'คุณชนะ';
+        $status.text('Surrender — ' + loser + ' ยอมแพ้ (' + result + (winner ? ', ' + winner + ' ชนะ' : '') + ')');
         removeHighlights();
     });
 
@@ -479,13 +491,21 @@ function stopOnlineClock() {
     }
 }
 
-function startOnlineClock(turnColor, deadline, turnTimeMs) {
+function startOnlineClock(turnColor, deadline, turnTimeMs, remainingMs) {
     if (gameMode !== 'online' || !deadline) return;
     stopOnlineClock();
     onlineTimedOut = false;
     onlineTurnColor = turnColor || 'white';
-    onlineTurnDeadline = Number(deadline);
     onlineTurnTimeMs = Number(turnTimeMs) || 90000;
+    // Use a duration measured at the server event instead of comparing clocks
+    // from different machines (which can be several seconds apart).
+    var remaining = Number.isFinite(Number(remainingMs))
+        ? Number(remainingMs)
+        // Backward-compatible with an older backend that only sends a deadline.
+        // Starting from receipt avoids displaying an inflated clock when server
+        // and browser clocks are not perfectly synchronized.
+        : onlineTurnTimeMs;
+    onlineTurnDeadline = Date.now() + remaining;
     $('#' + onlineTurnColor + '-clock').removeClass('hidden');
     $('#' + (onlineTurnColor === 'white' ? 'black' : 'white') + '-clock').removeClass('hidden');
 
@@ -600,6 +620,7 @@ function updateGameModeDisplay() {
         modeText += 'Online Match';
     }
     $('#game-mode-display').text(modeText);
+    $('#btnNewGame').text(gameMode === 'online' ? 'Surrender' : 'New Game');
     
     if (gameMode === 'pve') {
         $('#difficulty-display').text('AI: ' + aiDifficultyNames[aiDifficulty - 1]);
@@ -633,7 +654,7 @@ $(document).ready(function() {
 
     $('#btnNewGame').on('click', function() {
         if (gameMode === 'online' && currentRoom && socket) {
-            socket.emit('requestNewGame', { code: currentRoom });
+            socket.emit('surrender', { code: currentRoom });
             return;
         }
         startNewGame();
@@ -698,11 +719,17 @@ $(document).ready(function() {
 
     $('#btnCopyCode').on('click', function() {
         var code = $('#room-code-display').text();
-        var copy = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(code) : Promise.reject();
+        var copy = navigator.clipboard && navigator.clipboard.writeText
+            ? navigator.clipboard.writeText(code)
+            : Promise.reject(new Error('Clipboard API unavailable'));
         copy.then(function() {
-            alert('Code copied: ' + code);
+            showCopyFeedback('คัดลอกแล้ว');
         }).catch(function() {
-            $('#room-code-display').text(code + ' (เลือกและคัดลอก)');
+            var input = $('<textarea>').val(code).css({ position: 'fixed', opacity: 0 }).appendTo('body');
+            input[0].select();
+            var copied = document.execCommand('copy');
+            input.remove();
+            showCopyFeedback(copied ? 'คัดลอกแล้ว' : 'กรุณาคัดลอกรหัสด้วยตนเอง');
         });
     });
 
@@ -783,6 +810,14 @@ function setAiDifficulty(level) {
     $('#ai-difficulty-select').val(aiDifficulty);
     $('#ai-level-value').text(aiDifficultyNames[aiDifficulty - 1]);
     updateGameModeDisplay();
+}
+
+function showCopyFeedback(message) {
+    $('#copy-feedback').text(message);
+    window.clearTimeout(showCopyFeedback.timer);
+    showCopyFeedback.timer = window.setTimeout(function() {
+        $('#copy-feedback').text('');
+    }, 2200);
 }
 
 

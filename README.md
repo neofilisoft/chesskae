@@ -37,13 +37,15 @@ npm start
 **วิธีง่ายสุด:** deploy โปรเจกต์ทั้งก้อนไปที่ Railway/Render แล้วเปิด public URL  
 ผู้เล่นทุกคนเข้า URL นั้น → multiplayer ใช้ได้ทันที
 
-### Vercel (frontend เท่านั้น)
+### Vercel (frontend) + Render (backend)
 
 Vercel เป็น serverless → **ไม่รองรับ Socket.IO แบบ persistent**  
 ถ้าต้องการวาง frontend บน Vercel:
 
-1. Deploy backend ไปที่ Railway/Render ก่อน ได้ URL เช่น `https://chesskae-xxx.up.railway.app`
-2. เปิดเกมด้วย query parameter:
+1. Deploy backend ไปที่ Render ด้วย `render.yaml` จะได้ URL `https://chesskae-backend.onrender.com`
+2. เปิดเกมที่ `https://chesskae.vercel.app/` ได้ทันที ระบบตั้งค่า backend production ให้อัตโนมัติแล้ว
+
+ถ้าต้องการเปลี่ยน backend ชั่วคราว ยังสามารถใช้ query parameter ได้:
    ```
    https://your-app.vercel.app/?server=https://chesskae-xxx.up.railway.app
    ```

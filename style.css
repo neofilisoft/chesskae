@@ -77,6 +77,14 @@ body {
 .clock.active { background: var(--highlight); }
 .clock.expired { background: #b3261e; color: #fff; }
 
+.copy-feedback {
+    display: block;
+    min-height: 18px;
+    margin-top: 8px;
+    color: var(--success);
+    font-size: 13px;
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
