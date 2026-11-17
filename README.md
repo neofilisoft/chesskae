@@ -83,7 +83,7 @@ chesskae/
 ├── backend/vercel.json       # Vercel config
 ├── ai/stockfish/             # Stockfish source/binary
 ├── package.json
-└── package.json
+└── LICENSE
 ```
 
 ## ฟีเจอร์
