@@ -2,7 +2,7 @@
 
 หมากรุกสากล (Player vs Player / Player vs AI / Online Match)
 
-![Chess Game](chess.png)
+![Chess Game](src/chess.png)
 
 ## รันบน localhost
 
@@ -83,7 +83,7 @@ chesskae/
 ├── backend/vercel.json       # Vercel config
 ├── ai/stockfish/             # Stockfish source/binary
 ├── package.json
-└── chess.png
+└── package.json
 ```
 
 ## ฟีเจอร์
