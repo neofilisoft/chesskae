@@ -4,7 +4,7 @@
   "description": "Chesskae - Online Chess Game",
   "main": "server.js",
   "scripts": {
-    "build": "node -e \"require('fs').accessSync('src/index.html'); require('fs').accessSync('src/script.js'); require('fs').accessSync('src/style.css'); console.log('Static build ready')\"",
+    "build": "node -e \"for (const f of ['src/index.html','src/script.js','src/chesskae.js','src/style.css']) require('fs').accessSync(f); console.log('Static build ready')\"",
     "start": "node backend/server/server.js",
     "dev": "node backend/server/server.js"
   },

@@ -830,8 +830,17 @@ function makeBestMove() {
     var aiColor = playerColor === 'white' ? 'b' : 'w';
     showThinking(aiColor);
 
-    window.setTimeout(function() {
-        var bestMove = findBestMove(aiDifficulty, game);
+    window.setTimeout(async function() {
+        var bestMove = null;
+        if (window.ChesskaeAI) {
+            bestMove = await window.ChesskaeAI.findBestMove({
+                fen: game.fen(),
+                depth: aiDifficulty,
+                movetime: aiDifficulty >= 3 ? 900 : 600,
+                timeoutMs: aiDifficulty >= 3 ? 1100 : 800
+            });
+        }
+        bestMove = bestMove || findBestMove(aiDifficulty, game);
         if (bestMove) game.move(bestMove);
         board.position(game.fen());
         updateStatus();

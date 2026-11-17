@@ -94,6 +94,21 @@ chesskae/
 - ✅ Online clock (แต่ละเทิร์น 1:30 นาที, หมดเวลาแพ้พร้อมเหตุผล `Time Out`)
 - ✅ Promotion, Check/Checkmate sound, Move hints, Volume
 - ✅ รองรับ flip board
+- ✅ Chesskae AI adapter (`src/chesskae.js`) รองรับ Stockfish UCI Web Worker แบบตั้งค่าจาก deployment config โดยไม่ hardcode path
+
+### เปิดใช้ Stockfish ใน deployment
+
+`src/chesskae.js` ไม่ฝัง path ของ binary หรือ URL ใด ๆ ไว้ในโค้ด ให้โหลด config ของ deployment ก่อน `chesskae.js`:
+
+```html
+<script>
+  window.CHESSKAE_ENGINE_CONFIG = {
+    stockfishWorkerUrl: window.ENV_STOCKFISH_WORKER_URL
+  };
+</script>
+```
+
+Worker ต้องรับคำสั่ง UCI (`uci`, `isready`, `position fen ...`, `go ...`) และตอบ `uciok`, `readyok`, `bestmove ...` ตามลำดับ หากไม่มี config หรือ worker ใช้งานไม่ได้ เกมจะใช้ Chesskae search engine ใน `script.js` เป็น fallback โดยอัตโนมัติ
 
 ## สิ่งที่ปรับปรุง
 
