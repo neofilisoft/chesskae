@@ -2,7 +2,7 @@
 
 หมากรุกสากล (Player vs Player / Player vs AI / Online Match)
 
-<img src="chess.png" alt="Chess Game">[cite: 1]
+![Chess Game](src\chess.png)
 
 ## รันบน localhost
 
