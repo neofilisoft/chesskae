@@ -48,23 +48,24 @@ var socket = null;
 var DEFAULT_SERVER_URL = 'https://chesskae-backend.onrender.com';
 
 function getServerUrl() {
-    // Priority: ?server= -> localStorage -> localhost (dev) -> production backend
     try {
-        const qs = new URLSearchParams(window.location.search);
-        const fromQuery = qs.get('server');
-        if (fromQuery && fromQuery.trim()) {
-            const u = fromQuery.trim().replace(/\/$/, '');
-            localStorage.setItem('CHESSKAE_SERVER_URL', u);
-            return u;
-        }
-        const saved = localStorage.getItem('CHESSKAE_SERVER_URL');
-        if (saved && saved.trim()) return saved.trim().replace(/\/$/, '');
-    } catch (e) {}
+        const params = new URLSearchParams(window.location.search);
+        const server = params.get('server');
 
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return "http://localhost:3000";
+        if (server && server.trim()) {
+            return server.trim().replace(/\/+$/, '');
+        }
+    } catch (error) {
+        console.warn('Unable to read server configuration:', error);
     }
-    return DEFAULT_SERVER_URL;
+
+    const hostname = window.location.hostname;
+
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:3000';
+    }
+
+    return DEFAULT_SERVER_URL.replace(/\/+$/, '');
 }
 
 function ensureSocketConnected() {
